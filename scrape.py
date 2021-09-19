@@ -92,6 +92,12 @@ def txt_to_list(fpath):
         urls = f.readlines()
     return [url.split("\n")[0] for url in urls]
 
+def list_to_txt(to_record, dest):
+    with open(dest, "w") as f:
+        for i in to_record:
+            f.write(i+"\n")
+
+
 
 if __name__ == "__main__":
     root_url = "https://www.alltrails.com/canada/nova-scotia?ref=search"
@@ -99,15 +105,21 @@ if __name__ == "__main__":
     trail_urls, browser = get_trail_urls(root_url, urls_txt)
     time.sleep(random.randint(3, 6))
     total = {}
+    problematic_urls = []
     for trail in trail_urls:
         time.sleep(random.randint(3, 6))
         try:
             total[trail] = get_reviews_and_trail_metadata(trail, browser)
         except:
             input("tell em ur not a robot")
-            total[trail] = get_reviews_and_trail_metadata(trail, browser)
-            with open("aggregate2.json", "w") as f:
+            try:
+                total[trail] = get_reviews_and_trail_metadata(trail, browser)
+            except:
+                print(f"error with {trail}")
+                problematic_urls.append(trail)
+                list_to_txt(problematic_urls, "bad_ones.txt")
+            with open("aggregate3.json", "w") as f:
                 json.dump(total, f)
-    with open("aggregate2.json", "w") as f:
+    with open("aggregate3.json", "w") as f:
         json.dump(total, f)
 
