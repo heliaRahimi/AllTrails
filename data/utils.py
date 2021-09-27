@@ -58,10 +58,10 @@ def make_tables(data, path_to_csv=None):
 
 
 
-# if __name__ == "__main__":
-    # file_list = glob.glob(r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\*.json")
-    # data = aggregate_data(file_list)
-    # csv_dir = r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\csv"
-    # make_tables(data, path_to_csv=csv_dir)
-    # print(data)
+if __name__ == "__main__":
+    file_list = glob.glob(r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\*.json")
+    data = aggregate_data(file_list)
+    csv_dir = r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\csv"
+    make_tables(data, path_to_csv=csv_dir)
+    print(data)
 
