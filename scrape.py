@@ -99,27 +99,28 @@ def list_to_txt(to_record, dest):
 
 
 
-if __name__ == "__main__":
-    root_url = "https://www.alltrails.com/canada/nova-scotia?ref=search"
-    urls_txt = r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\trail_urls.txt"
-    trail_urls, browser = get_trail_urls(root_url, urls_txt)
-    time.sleep(random.randint(3, 6))
-    total = {}
-    problematic_urls = []
-    for trail in trail_urls:
-        time.sleep(random.randint(3, 6))
-        try:
-            total[trail] = get_reviews_and_trail_metadata(trail, browser)
-        except:
-            input("tell em ur not a robot")
-            try:
-                total[trail] = get_reviews_and_trail_metadata(trail, browser)
-            except:
-                print(f"error with {trail}")
-                problematic_urls.append(trail)
-                list_to_txt(problematic_urls, "bad_ones.txt")
-            with open("aggregate3.json", "w") as f:
-                json.dump(total, f)
-    with open("aggregate3.json", "w") as f:
-        json.dump(total, f)
+# if __name__ == "__main__":
+#     root_url = "https://www.alltrails.com/canada/nova-scotia?ref=search"
+#     urls_txt = r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\trail_urls.txt"
+#     f_name = "aggregate3.json"
+#     trail_urls, browser = get_trail_urls(root_url, urls_txt)
+#     time.sleep(random.randint(3, 6))
+#     total = {}
+#     problematic_urls = []
+#     for trail in trail_urls:
+#         time.sleep(random.randint(3, 6))
+#         try:
+#             total[trail] = get_reviews_and_trail_metadata(trail, browser)
+#         except:
+#             input("tell em ur not a robot")
+#             try:
+#                 total[trail] = get_reviews_and_trail_metadata(trail, browser)
+#             except:
+#                 print(f"error with {trail}")
+#                 problematic_urls.append(trail)
+#                 list_to_txt(problematic_urls, "bad_ones.txt")
+#             with open(f_name, "w") as f:
+#                 json.dump(total, f)
+#     with open(f_name, "w") as f:
+#         json.dump(total, f)
 
