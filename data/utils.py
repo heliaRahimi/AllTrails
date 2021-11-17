@@ -52,6 +52,17 @@ def make_tables(data, path_to_csv=None):
 
     return written_reviews, star_reviews, key_words, meta
 
+def plot_data(written_reviews, star_reviews, key_words):
+    import seaborn as sns; sns.set_theme()
+    import matplotlib.pyplot as plt
+    num_reviews = [["Written Reviews", len(j)]  for j in written_reviews['reviews']]
+    num_stars = [["Star Reviews", len(j)] for j in star_reviews['rating']]
+    num_kws = [["Key Words", len(j)] for j in key_words['key_words']]
+    df = pd.DataFrame(num_reviews+num_stars+num_kws, columns = [" ", "count"])
+    ax = sns.boxplot(x=" ", y="count", data=df)
+    plt.show()
+    return ax
+
 
 
 
@@ -59,9 +70,10 @@ def make_tables(data, path_to_csv=None):
 
 
 if __name__ == "__main__":
-    file_list = glob.glob(r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\*.json")
+    file_list = glob.glob(r"/blah/GimmeAllTheTrails/data\*.json")
     data = aggregate_data(file_list)
-    csv_dir = r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\csv"
-    make_tables(data, path_to_csv=csv_dir)
+    csv_dir = r"/blah/GimmeAllTheTrails/data/csv"
+    written_reviews, star_reviews, key_words, meta = make_tables(data, path_to_csv=csv_dir)
+    plot_data(written_reviews, star_reviews, key_words)
     print(data)
 
