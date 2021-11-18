@@ -1,0 +1,3 @@
+[console_scripts]
+GimmeAllTheTrails = GimmeAllTheTrails.main:run
+

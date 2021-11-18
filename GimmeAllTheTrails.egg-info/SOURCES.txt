@@ -1,0 +1,9 @@
+README.md
+setup.py
+GimmeAllTheTrails.egg-info/PKG-INFO
+GimmeAllTheTrails.egg-info/SOURCES.txt
+GimmeAllTheTrails.egg-info/dependency_links.txt
+GimmeAllTheTrails.egg-info/entry_points.txt
+GimmeAllTheTrails.egg-info/not-zip-safe
+GimmeAllTheTrails.egg-info/requires.txt
+GimmeAllTheTrails.egg-info/top_level.txt

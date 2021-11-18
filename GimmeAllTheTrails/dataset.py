@@ -26,8 +26,8 @@ class AllTrails(object):
         # convert strings to dicts
         trail_id_coords["coords"] = trail_id_coords["coords"].apply(lambda x: ast.literal_eval(x))
         # get lat and lon
-        trail_id_coords["latitude"] = trail_id_coords["coords"].apply(lambda x: float(x["latitude"]))
-        trail_id_coords["longitude"] = trail_id_coords["coords"].apply(lambda x: float(x["longitude"]))
+        trail_id_coords["latitude"] = trail_id_coords["coords"].apply(lambda x: str(x["latitude"]))
+        trail_id_coords["longitude"] = trail_id_coords["coords"].apply(lambda x: str(x["longitude"]))
         return trail_id_coords.drop(columns=["coords"])
 
 
