@@ -3,6 +3,8 @@ import os
 import pandas as pd
 import ast
 import numpy as np
+import random
+from itertools import chain
 
 class AllTrails(object):
     """
@@ -18,6 +20,11 @@ class AllTrails(object):
         self.type_length_elev_rating = self._type_length_elev_rating()
         self.trail_descriptions = self._trail_descriptions()
         self.main_map_data = self._main_map_data()
+        self.cluster_map_data = self._cluster_map_data()
+        self.sentiment_analysis_data = self._sentiment_analysis_data()
+        self.key_words = self._key_words()
+        self.num_reviews = self._num_reviews()
+        self.tag_dummies = self._tag_dummies()
 
     def _lat_lon_trail_id(self) -> pd.DataFrame:
         """
@@ -56,10 +63,11 @@ class AllTrails(object):
         type_length_elev_rating["type"] = data["length_elev_type"].apply(lambda x: x[2])
         # process ratings
         stars = self.datasets["star_reviews"]
-        stars["rating"] = stars["rating"].apply(lambda x: ast.literal_eval(x))
+        type_length_elev_rating["rating"] = stars["rating"].apply(lambda x: ast.literal_eval(x))
         # add avg rating
-        type_length_elev_rating["avg_rating"] = stars["rating"].apply(lambda x: np.mean([int(i.split(" ")[0]) for i in x if i.split(" ")[0] != "NaN"]))
-
+        type_length_elev_rating["avg_rating"] = type_length_elev_rating["rating"].apply(lambda x: np.mean([int(i.split(" ")[0]) for i in x if i.split(" ")[0] != "NaN"]))
+        type_length_elev_rating["normalized_length"] = (type_length_elev_rating["length"] - type_length_elev_rating["length"].min()) /(type_length_elev_rating["length"].max()-type_length_elev_rating["length"].min())
+        type_length_elev_rating["normalized_elevation"] = (type_length_elev_rating["elevation"] - type_length_elev_rating["elevation"].min()) /(type_length_elev_rating["elevation"].max()-type_length_elev_rating["elevation"].min())
         return type_length_elev_rating
 
     def _main_map_data(self):
@@ -77,6 +85,44 @@ class AllTrails(object):
         type_length_elev_rating = type_length_elev_rating.drop(columns="trail_id")
 
         return pd.concat([type_length_elev_rating, lat_lon_ind], axis=1).reset_index()
+
+    def _cluster_map_data(self):
+        data = self.main_map_data.copy()
+        cluster_data = self.datasets["clusters"][["clusters", "trail_id"]]
+        cluster_data.index = cluster_data["trail_id"]
+        data.index = data["trail_id"]
+        data = pd.concat([cluster_data, data], axis=1)
+        data = data.drop(columns=["trail_id"]).reset_index()
+        return data
+
+    def _sentiment_analysis_data(self):
+        sentiment_data = self.datasets["sentiment"]
+        return sentiment_data
+
+    def _key_words(self):
+        keywords = self.datasets["key_words"].copy(deep=False)
+        keywords["list"] =  keywords["key_words"].apply(lambda x: list(chain(*ast.literal_eval(x))))
+        keywords["str"] = keywords["list"].apply(lambda x: " ".join(x))
+        keywords["set"] = keywords["list"].apply(lambda x: set(x))
+        return keywords
+
+    def _num_reviews(self):
+        reviews = pd.DataFrame()
+        reviews["ratings"] = self.type_length_elev_rating["rating"].apply(lambda x: len(x))
+        reviews["trail_id"] = self.type_length_elev_rating["trail_id"]
+        reviews["written_reviews"] = self.datasets["written_reviews"]["reviews"].apply(lambda x: len(ast.literal_eval(x)))
+        reviews["ratings_normalized"] = (reviews["ratings"] - reviews["ratings"].min()) /(reviews["ratings"].max()-reviews["ratings"].min())
+        reviews["written_normalized"] = (reviews["written_reviews"] - reviews["written_reviews"].min()) /(reviews["written_reviews"].max()-reviews["written_reviews"].min())
+        return reviews
+
+    def _tag_dummies(self):
+        tags = self.datasets["clusters"].copy(deep=False)
+        tags = tags.drop(columns = ["type", "length", "elevation"])
+        tags["trail_name"] = tags["trail_id"].apply(lambda x: " ".join(x.split("/")[-1].split("-")))
+        return tags
+
+
+
 
 
 if __name__ == "__main__":

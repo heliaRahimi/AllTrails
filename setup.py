@@ -20,7 +20,10 @@ setup(name='GimmeAllTheTrails',
         'soupsieve==2.2.1',
         'urllib3==1.26.6',
         'plotly',
-        'dash'
+        'dash',
+          'pyLDAvis',
+          'textblob',
+          'wordcloud'
       ],
       entry_points={
           'console_scripts': [
