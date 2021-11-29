@@ -1,33 +1,32 @@
 import pandas as pd
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+import click
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from wordcloud import WordCloud
-from scipy.spatial.distance import hamming
-# from dash.dependencies import Output, Input
-# from dash import no_update
-from dash import Dash, dcc, html, Input, Output, no_update, State
-from dash_bootstrap_components._components.Container import Container
+from dash import dcc, html, Input, Output, no_update, State
 import plotly.express as px
 import plotly.graph_objects as go
 from GimmeAllTheTrails.dataset import AllTrails
 
 # FIGURES #
 def mapbox(map_data):
+    """
+    GENERAL MAP BOX PLOT -> USED FOR MAIN MAP
+    :param map_data: df for map plot
+    :return: fig
+    """
     fig = go.Figure(go.Scattermapbox(
-        lat=map_data.latitude.tolist(),
-        lon=map_data.longitude.tolist(),
-        mode='markers',
-        marker=go.scattermapbox.Marker(
-            size=9
-        ),
+            lat=map_data.latitude.tolist(),
+            lon=map_data.longitude.tolist(),
+            mode='markers',
+            marker=go.scattermapbox.Marker(
+                size=9
+            ),
 
-        text=map_data.trail_id.tolist()
+            text=map_data.trail_id.tolist()
+        )
     )
-    )
-    # https://plotly.github.io/plotly.py-docs/generated/plotly.express.scatter_mapbox.html
     fig.update_layout(
         autosize=True,
         hovermode='closest',
@@ -58,18 +57,21 @@ def mapbox(map_data):
     return fig
 
 def cluster_mapbox(map_data):
+    """
+    map box for the clustered dataset
+    :param map_data: data containing clusters
+    :return: figure
+    """
     fig = go.Figure(go.Scattermapbox(
-        lat=map_data.latitude.tolist(),
-        lon=map_data.longitude.tolist(),
-        mode='markers',
-        marker=go.scattermapbox.Marker(
-            size=9, color = map_data.clusters.tolist()
-        ),
-
-        text=map_data.trail_id.tolist()
+            lat=map_data.latitude.tolist(),
+            lon=map_data.longitude.tolist(),
+            mode='markers',
+            marker=go.scattermapbox.Marker(
+                size=9, color = map_data.clusters.tolist()
+            ),
+            text=map_data.trail_id.tolist()
+        )
     )
-    )
-    # https://plotly.github.io/plotly.py-docs/generated/plotly.express.scatter_mapbox.html
     fig.update_layout(
         autosize=True,
         hovermode='closest',
@@ -92,62 +94,12 @@ def cluster_mapbox(map_data):
     )
     return fig
 
-def compute_hamming_dist(selected_point, all_points):
-    return [hamming(selected_point, cur_point) for cur_point in all_points]
-
-def plot_hamming(hamming_df):
-
-    fig = go.Figure(data=[
-        go.Scatter(
-            mode='markers',
-            x=hamming_df["distance"],
-            y=[-0.08 for x in hamming_df["distance"]],
-            line=dict(
-                color='Black'
-            ),
-            marker=dict(
-                color='LightSkyBlue',
-                size=20,
-                line=dict(
-                    color='MediumPurple',
-                    width=2
-                )
-            ),
-        )
-    ])
-
-    fig.update_layout(template="simple_white")
-
-    fig.update_layout(
-        autosize=False,
-        height=300,
-        paper_bgcolor="White",
-        )
-
-    fig.update_layout(
-        xaxis=dict(
-            tickangle=45,
-            title_font={"size": 20},
-            title_standoff=10),
-            )
-
-    fig.update_yaxes(visible=False)
-    fig.update_yaxes(range=[-0.1, 0.1])
-
-
-    fig.update_xaxes(range=[0, hamming_df["distance"]])
-    fig.update_xaxes(showline=True, linewidth=2, linecolor='black')
-
-    # Set custom x-axis labels
-    fig.update_xaxes(
-        ticktext = hamming_df["trail_name"].tolist(),
-        tickvals = hamming_df["distance"].tolist()
-    )
-
-
-
-    return fig
 def wordcloud(word_cloud):
+    """
+    make a wordcloud plot
+    :param word_cloud: wordcloud generated im
+    :return: fig
+    """
     fig = px.imshow(word_cloud)
     fig.update_layout(
         autosize=True,
@@ -163,10 +115,17 @@ def wordcloud(word_cloud):
     return fig
 
 def sentiment_scatter_plot(data, selected_trails, current_trail, trail_name):
+    """
+    plot a sentiment scatter plot
+    :param data: data to be plotted
+    :param selected_trails: trails that are currently selcted by the user
+    :param current_trail: the current trail selected by user
+    :param trail_name: name of trail selected
+    :return: fig
+    """
     selected_data = data.sentiment_analysis_data[data.sentiment_analysis_data["trail_id"].isin(selected_trails)]
     ind = selected_data[selected_data["trail_id"] == current_trail].index.item()
     selected_data.at[ind, 'Analysis'] = trail_name
-    # fig = px.histogram(selected_data, x="Subjectivity")
     sent_an_plot = px.scatter(selected_data,
                               x='Polarity',
                               y='Subjectivity',
@@ -177,17 +136,25 @@ def sentiment_scatter_plot(data, selected_trails, current_trail, trail_name):
     return sent_an_plot
 
 def get_sentiment_analysis(data, selected_trails, full_set=False):
+    """
+    function to get both word cloudsw and sentiment scatter plot
+    :param data: DF to be used for analysis
+    :param selected_trails: trails selected by user
+    :param full_set: wether to use the entire dataset or not
+    :return: fig
+    """
     selected_data = data.sentiment_analysis_data[data.sentiment_analysis_data["trail_id"].isin(selected_trails)]
     if full_set:
+        # generate using the entire dataset #
         words = selected_data["clean_reviews"].tolist()
         if not len(words):
             words = ["NA"]
         word_cloud_data = " ".join(words)
-
         full_wordcloud = WordCloud(width=1000, height=600, margin=0).generate(word_cloud_data)
         return wordcloud(full_wordcloud)
 
     else:
+        # generate using subset of trails #
         sent_an_plot = px.scatter(selected_data,
                                   x='Polarity',
                                   y='Subjectivity',
@@ -201,6 +168,8 @@ def get_sentiment_analysis(data, selected_trails, full_set=False):
                                     t=0))
         positive = selected_data[
             selected_data["Analysis"] == "Positive"]["clean_reviews"].tolist()
+
+        # if there is positive sentiment in analysis #
         if len(positive):
             pos_word_cloud_data = " ".join(selected_data[
                                                selected_data["Analysis"] == "Positive"]["clean_reviews"].tolist())
@@ -213,6 +182,8 @@ def get_sentiment_analysis(data, selected_trails, full_set=False):
         negative = selected_data[
             selected_data["Analysis"] == "Negative"][
             "clean_reviews"].tolist()
+
+        # if there is negative sentiment in analysis #
         if len(negative):
             neg_word_cloud_data = " ".join(negative)
             neg_wordcloud = WordCloud(width=620, height=480, margin=0).generate(neg_word_cloud_data)
@@ -222,7 +193,18 @@ def get_sentiment_analysis(data, selected_trails, full_set=False):
             empty_fig.update_layout(template="plotly_dark")
             neg_wordcloud = empty_fig
         return sent_an_plot, pos_wordcloud, neg_wordcloud
+
 def get_filtered_map_data(data, selected_trails, filter_type, filter_rating, filter_length, filter_elev):
+    """
+    function to filter the dataset based on the user selected filters
+    :param data: Base DF
+    :param selected_trails: user sleceted trails
+    :param filter_type: filter - type of trail
+    :param filter_rating: filter - avg rating of trail
+    :param filter_length: filter - length of trail
+    :param filter_elev: filter - elevation of trail
+    :return: filtered DF
+    """
     # filter data based on results
     filtered_data = data.main_map_data.copy(deep=False)
     selected_trails = filtered_data[filtered_data["trail_id"].isin(selected_trails)]
@@ -245,8 +227,8 @@ def get_filtered_map_data(data, selected_trails, filter_type, filter_rating, fil
 
 
 # APP #
-# @click.command()
-# @click.option('--csv_dir', default='', help='directory of csv files')
+@click.command()
+@click.option('--csv_dir', type=str, default=None, help='directory of csv files')
 def run(csv_dir):
     # init app #
     app = dash.Dash(__name__,
@@ -335,26 +317,13 @@ def run(csv_dir):
             ]
         ),
         style={ "height": "66vh", "width": "20vw",
-                # "padding-top": "5vh",
-                # "padding-left": "0.5vh",
                 "position": "absolute",
                 "top": "1vh",
                 "left": "1vw",
                 "z-index": "2",
                 "opacity":"0.8"},
     )
-    fig = px.scatter(data.sentiment_analysis_data,
-                         x='Polarity',
-                         y='Subjectivity',
-                         color = 'Analysis',
-                         size='Subjectivity',
-                         template = "plotly_dark")
-    fig.update_layout(margin=go.layout.Margin(
-        l=0,
-        r=0,
-        b=0,
-        t=0))
-    # sentiment analysis
+    # Sentiment Analysis on right #
     empty_fig = go.Figure()
     empty_fig.update_layout(template="plotly_dark")
     sent_analysis = html.Div([
@@ -370,8 +339,6 @@ def run(csv_dir):
     ],
 
         style={ "height": "31vh", "width": "20vw",
-                #"padding-top": "3vh",
-                #"padding-left": "0.5vh",
                 "position": "absolute",
                 "top": "1vh",
                 "right": "1vw",
@@ -395,8 +362,6 @@ def run(csv_dir):
                   )
     ],
         style={ "height": "31vh", "width": "20vw",
-                #"padding-top": "2vh",
-                #"padding-left": "0.5vh",
                 "position": "absolute",
                 "top": "33vh",
                 "right": "1vw",
@@ -420,8 +385,6 @@ def run(csv_dir):
                   )
     ],
         style={ "height": "31vh", "width": "20vw",
-                # "padding-top": "2vh",
-                # "padding-left": "0.5vh",
                 "position": "absolute",
                 "top": "65vh",
                 "right": "1vw",
@@ -429,57 +392,25 @@ def run(csv_dir):
                 "opacity": "0.8" },
         className="border rounded-3"
     )
-    # cluster map
-    # clusters = mapbox(data.cluster_map_data)
-    # print(data.cluster_map_data.cluster)
-    # clusters.update_layout(mapbox=dict(
-    #         zoom=5
-    #     ),
-    #     marker=go.scattermapbox.Marker(
-    #         size=9, color=data.cluster_map_data.cluster
-    #     ),
-    # )
-    cluster_map = html.Div([html.A(id='top', children=dcc.Graph(figure=cluster_mapbox(data.cluster_map_data),
+    # Cluster map on bottom left corner #
+    cluster_map = html.Div([dcc.Graph(figure=cluster_mapbox(data.cluster_map_data),
                             id='cluster-map',
                             config={
                                 'displayModeBar': False
                             },
                             clear_on_unhover=True,
-                  style={ "height": "100%", "width": "100%"}))],
-        style={ "height": "31vh", "width": "20vw",
-                "position": "absolute",
-                "top": "65.5vh",
-                "left": "1vw",
-                "z-index": "2",
-                "opacity": "0.8",
-                },
-        className="border rounded-3"
-    )
+                            style={ "height": "100%", "width": "100%"})],
+                style={ "height": "31vh", "width": "20vw",
+                        "position": "absolute",
+                        "top": "65.5vh",
+                        "left": "1vw",
+                        "z-index": "2",
+                        "opacity": "0.8",
+                        },
+                className="border rounded-3"
+            )
 
-    # list of selected trails #
-    trail_list = dbc.Card(
-        dbc.CardBody(
-            [
-                html.H4("Compare Trails", className="card-title"),
-                html.H6("Card subtitle", className="card-subtitle"),
-                html.P(
-                    "Some quick example text to build on the card title and make "
-                    "up the bulk of the card's content.",
-                    className="card-text",
-                ),
-                dbc.CardLink("Card link", href="#"),
-                dbc.CardLink("External link", href="https://google.com"),
-            ]
-        ),
-        style={ "height": "60vh", "width": "20vw",
-                "padding-top": "5vh",
-                "padding-left": "0.5vh",
-                 "position": "absolute",
-                  "bottom": "25px",
-                  "right": "25px",
-                "z-index": "2",
-                "opacity": "0.8" },
-    )
+    # main map #
     main_map_graph = html.Div([dcc.Graph(figure={},
                           id='main-map',
                           config={
@@ -493,7 +424,7 @@ def run(csv_dir):
                                ])
     main = html.Div(
         [
-            # navbar,
+            # app components #
             trail_view,
             sent_analysis,
             positive_sentiment,
@@ -501,6 +432,7 @@ def run(csv_dir):
             main_map_graph,
             filters,
             cluster_map,
+            # variables for callback functionality #
             dcc.Store(id='current_trail_id', data=None),
             dcc.Store(id="selected_trails", data=[]),
             dcc.Store(id="selected_filter", data=None),
@@ -509,53 +441,15 @@ def run(csv_dir):
             dcc.Store(id="has_been_init", data=False),
             dcc.Store(id="select_all_clicks", data=0),
             dcc.Store(id="select_filter_clicks", data=0),
-            dcc.Store(id="unselect_all_clicks", data=0),
-            # trail_list
+            dcc.Store(id="unselect_all_clicks", data=0)
         ],
-        style={ 'width': '100%', 'height': '100%' })
+        style={ 'width': '100%', 'height': '100%'})
 
 
     app.layout = main
 
 
     # FUNCTIONALITY
-
-    @app.callback(
-        Output("main-map-hover", "show"),
-         Output("main-map-hover", "bbox"),
-         Output("main-map-hover", "children"),
-        Input("main-map", "hoverData")
-    )
-    def display_hover(hoverData):
-        if hoverData is None:
-            return False, no_update, no_update
-
-        # demo only shows the first point, but other points may also be available
-        pt = hoverData["points"][0]
-        bbox = pt["bbox"]
-
-        num = pt["pointNumber"]
-        # print(pt, bbox, num)
-        # df_row = df.iloc[num]
-        # img_src = df_row['IMG_URL']
-        # name = df_row['NAME']
-        # form = df_row['FORM']
-        # desc = df_row['DESC']
-        # if len(desc) > 300:
-        #     desc = desc[:100] + '...'
-
-        children = [
-            html.Div([
-                # html.Img(src=img_src, style={ "width": "100%" }),
-                html.H2(f"test"),
-                html.P(f"test"),
-                html.P(f"test"),
-            ], style={ 'width': '200px'})
-        ]
-
-        return True, bbox, children
-
-
 
     @app.callback(
         [
@@ -683,21 +577,18 @@ def run(csv_dir):
 
 
        # ELSE OPEN UP TRAIL CARD #
-
         modal_state = not is_open
         # get trail id
         trail_id = clickData['points'][0]['text']
         # get trail name
         trail_name = " ".join(trail_id.split("/")[-1].split("-"))
-
         if len(trail_name) > 7:
             shortened_trail_name = trail_name[:8] + "..."
         else:
-
             shortened_trail_name = trail_name
+
         # update mini map
         # show only points that exist in same cluster
-
         cluster = data.cluster_map_data[data.cluster_map_data["trail_id"] == trail_id]["clusters"].iloc[0]
         cluster_data = data.cluster_map_data[data.cluster_map_data["clusters"] == cluster]
         mini_map = cluster_mapbox(cluster_data)
@@ -723,8 +614,6 @@ def run(csv_dir):
                           id="mini-map"
                           )
             ],
-
-            # className="border rounded-3",
             style={ "height": "35vh", "width": "30vw",
                     "position": "absolute",
                     "top": "1vh",
@@ -741,11 +630,10 @@ def run(csv_dir):
         keywords = data.key_words[data.key_words["trail_id"] == trail_id]["set"]
         trail_card = html.Div(
             [
-                html.H3(("★" * avg_stars) + ("☆" * (5- avg_stars))),
+                html.H3(("★" * avg_stars) + ("☆" * (5 - avg_stars))),
                 html.P(
                     trail_desc
                 ),
-
             ] + [dbc.Badge(kw, color="dark", className="me-1") for kw in keywords.iloc[0]],
 
         )
@@ -755,8 +643,6 @@ def run(csv_dir):
                 children=trail_card,
                 className="p-3 bg-light border rounded-3",
                 style={ "height": "35vh", "width": "40vw",
-                        # "padding-top": "5vh",
-                        # "padding-left": "0.5vh",
                         "position": "absolute",
                         "top": "1vh",
                         "left": "31.5vw",
@@ -770,7 +656,7 @@ def run(csv_dir):
         reviews = data.num_reviews[data.num_reviews["trail_id"] == trail_id]
         normalized_ratings = reviews["ratings_normalized"].iloc[0]
         normalized_written = reviews["written_normalized"].iloc[0]
-
+        # length and elevation bar plot #
         fig1 = px.bar(x=["Length", "Elevation"], y=[normalized_length, normalized_elevation])
         fig1.update_yaxes(visible=False)
         fig1.update_xaxes(visible=False)
@@ -782,7 +668,6 @@ def run(csv_dir):
                                 b=0,
                                 t=100)
                             )
-
 
         fig2 = px.bar(x=["num ratings", "num reviews"], y=[normalized_ratings, normalized_written])
         fig2.update_yaxes(visible=False)
@@ -813,10 +698,7 @@ def run(csv_dir):
                                     'staticPlot': False
                                     },
                                    ), style={ 'width': '50%', 'height': '100%', "padding-left": "0.5vh", "padding-right": "0.5vh"}, className="border rounded-3")], style={ 'width': '100%', 'height': '100%', "padding-left": "0vh", "padding-right": "0vh"}),
-            # className="p-5 bg-light border rounded-3",
             style={ "height": "35vh", "width": "28vw",
-                    # "padding-top": "5vh",
-                    # "padding-left": "0.5vh",
                     "position": "absolute",
                     "top": "1vh",
                     "left": "72vw",
@@ -824,7 +706,7 @@ def run(csv_dir):
                     "opacity": "0.8" },
             id="length-height"
         )
-
+        # scatter plot on trail card showing length vs. elevation for similar clusters
         cluster_data["colour"] = (cluster_data["trail_id"] == trail_id).apply(lambda x: shortened_trail_name if x else "cluster")
         scatter_l_h = px.scatter(x=cluster_data["length"], y=cluster_data["elevation"], color=cluster_data["colour"])
         scatter_l_h.update_layout(
@@ -840,8 +722,6 @@ def run(csv_dir):
         )
         similar_trails = html.Div(
             [
-             #html.H4("Similar Trails"),
-             #html.Div([html.H5(["To be implemented...", dbc.Badge("New", className="ms-1")])])
              dcc.Graph(figure=scatter_l_h,
                        style={ 'width': '100%', 'height': '100%', 'display': 'flex'},
                        config={
@@ -850,10 +730,7 @@ def run(csv_dir):
                        }
                        )
             ],
-            # className="p-5 bg-light border rounded-3",
             style={"height": "50vh", "width": "29.5vw",
-                    # "padding-top": "5vh",
-                    # "padding-left": "0.5vh",
                     "position": "absolute",
                     "top": "37vh",
                     "left": "1vw",
@@ -862,9 +739,8 @@ def run(csv_dir):
             id="similar-trails",
             className="border rounded-3"
         )
-
+        # individualized sentiment plot #
         fig = sentiment_scatter_plot(data, cluster_data["trail_id"].tolist(), trail_id, shortened_trail_name)
-
         fig.update_layout(title="Sentiment Analysis for Associated Cluster",
                           margin=go.layout.Margin(
                               l=0,
@@ -880,11 +756,7 @@ def run(csv_dir):
                                        'staticPlot': False
                                    }
                                    ),
-                # className="bg-light border rounded-3",
-
             style={"height": "50vh", "width": "30.5vw",
-                # "padding-top": "5vh",
-                # "padding-left": "0.5vh",
                  "position": "absolute",
                 "top": "37vh",
                 "left": "31vw",
@@ -894,9 +766,8 @@ def run(csv_dir):
             className="border rounded-3"
         ),
         )
-
+        # word cloud for the trail and related trails #
         full_wordcloud = get_sentiment_analysis(data, selected_trails=[trail_id], full_set=True)
-
         sentiment_analysis = dbc.Col(html.Div(
             children=dcc.Graph(figure=full_wordcloud, style={ 'width': '100%', 'height': '100%', 'display': 'flex'
                                                    },
@@ -906,10 +777,7 @@ def run(csv_dir):
                                },
                                ),
             # className="bg-light border rounded-3",
-
             style={ "height": "50vh", "width": "36.25vw",
-                    # "padding-top": "5vh",
-                    # "padding-left": "0.5vh",
                     "position": "absolute",
                     "top": "37vh",
                     "left": "62vw",
@@ -919,9 +787,8 @@ def run(csv_dir):
         className="border rounded-3") )
 
 
-        # set header
+        # set header for trail card #
         header = dbc.ModalTitle(trail_name, style = { "padding-right": "1vw" })
-
         modal_content = [mini_map,
                          trail_description,
                          sentiment_scatter,
@@ -940,19 +807,6 @@ def run(csv_dir):
                no_update, no_update, no_update, no_update, no_update, \
                no_update, no_update, no_update, no_update, no_update
 
-    # @app.callback(
-    #     [Output("selected_trails", 'data')],
-    #     [Input("select_trail", 'n_clicks'),
-    #      Input('current_trail_id', 'data'),
-    #      Input("selected_trails", 'data')]
-    # )
-    # def add_to_trail_list(n_clicks, current_trail_id, selected_trails):
-    #     print(selected_trails)
-    #     if current_trail_id:
-    #         selected_trails.append(current_trail_id)
-    #         return selected_trails,
-    #     else:
-    #         return no_update,
     app.run_server(debug=False)
 
 

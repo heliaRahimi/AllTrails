@@ -3,7 +3,6 @@ import os
 import pandas as pd
 import ast
 import numpy as np
-import random
 from itertools import chain
 
 class AllTrails(object):
@@ -11,11 +10,13 @@ class AllTrails(object):
     load all data into this class
     """
     def __init__(self, csv_dir):
+        # load all raw data as DFs #
         self.csv_dir = csv_dir
         self.files = glob.glob(os.path.join(csv_dir, "*.csv"))
         self.datasets = {
             os.path.basename(p).split(".")[0]:pd.read_csv(p) for p in self.files
         }
+        # all subsets of dataset for different purposes in app (preprocess)#
         self.lat_lon_trail_id = self._lat_lon_trail_id()
         self.type_length_elev_rating = self._type_length_elev_rating()
         self.trail_descriptions = self._trail_descriptions()
@@ -29,7 +30,7 @@ class AllTrails(object):
     def _lat_lon_trail_id(self) -> pd.DataFrame:
         """
         get the lat lon pairs and associated name pairs for each hiking trail location
-        :return:
+        :return: DF containing lat lon info
         """
         # get coords and trail id
         trail_id_coords = self.datasets["meta_reviews"][["coords", "trail_id"]]
@@ -43,14 +44,14 @@ class AllTrails(object):
     def _trail_descriptions(self) -> pd.DataFrame:
         """
         get trail descriptions
-        :return:
+        :return: DF containing trail descriptions
         """
         return self.datasets["meta_reviews"][["trail_id", "description"]]
 
     def _type_length_elev_rating(self) -> pd.DataFrame:
         """
         get type length and elevation fields
-        :return:
+        :return: DF containing type, length, elev and rating
         """
         # load type length and elevation
         data = self.datasets["meta_reviews"][["trail_id", "length_elev_type"]]
@@ -73,7 +74,7 @@ class AllTrails(object):
     def _main_map_data(self):
         """
         concat all datasets together for main map dataset
-        :return:
+        :return: DF containing concatonated data for general purpose functionality
         """
         # dset 1
         lat_lon_ind = self.lat_lon_trail_id.copy(deep=False)
@@ -87,6 +88,10 @@ class AllTrails(object):
         return pd.concat([type_length_elev_rating, lat_lon_ind], axis=1).reset_index()
 
     def _cluster_map_data(self):
+        """
+        get clustered data
+        :return:  DF containing cluster data for map
+        """
         data = self.main_map_data.copy()
         cluster_data = self.datasets["clusters"][["clusters", "trail_id"]]
         cluster_data.index = cluster_data["trail_id"]
@@ -96,10 +101,18 @@ class AllTrails(object):
         return data
 
     def _sentiment_analysis_data(self):
+        """
+        get sentiment analysis data
+        :return:  DF containing sentiment analysis data
+        """
         sentiment_data = self.datasets["sentiment"]
         return sentiment_data
 
     def _key_words(self):
+        """
+        get keywords data
+        :return:  DF containing key words
+        """
         keywords = self.datasets["key_words"].copy(deep=False)
         keywords["list"] =  keywords["key_words"].apply(lambda x: list(chain(*ast.literal_eval(x))))
         keywords["str"] = keywords["list"].apply(lambda x: " ".join(x))
@@ -107,6 +120,10 @@ class AllTrails(object):
         return keywords
 
     def _num_reviews(self):
+        """
+        get number of reviews
+        :return: DF containing reviews
+        """
         reviews = pd.DataFrame()
         reviews["ratings"] = self.type_length_elev_rating["rating"].apply(lambda x: len(x))
         reviews["trail_id"] = self.type_length_elev_rating["trail_id"]
@@ -116,15 +133,11 @@ class AllTrails(object):
         return reviews
 
     def _tag_dummies(self):
+        """
+        get tags as dummy variables
+        :return: DF containing tag dummies
+        """
         tags = self.datasets["clusters"].copy(deep=False)
         tags = tags.drop(columns = ["type", "length", "elevation"])
         tags["trail_name"] = tags["trail_id"].apply(lambda x: " ".join(x.split("/")[-1].split("-")))
         return tags
-
-
-
-
-
-if __name__ == "__main__":
-    data = AllTrails(r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\csv")
-    print(data.main_map_data)

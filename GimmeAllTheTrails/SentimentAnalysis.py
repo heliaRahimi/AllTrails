@@ -1,16 +1,8 @@
-import glob
-import os
 import pandas as pd
-import ast
-from GimmeAllTheTrails.utils.Contraction_map import process_text, subjectivity,polarity,sent_Analysis
 from textblob import TextBlob
-# import plotly.express as px
-# import matplotlib.pyplot as plt
-# import pyLDAvis
-# import pyLDAvis.sklearn
-# import pyLDAvis.gensim_models as gensimvis
-#
-# from GimmeAllTheTrails.utils.LDA import optimal_lda_model
+
+from GimmeAllTheTrails.utils.Contraction_map import process_text, subjectivity,polarity,sent_Analysis
+
 
 
 class Sentiment_Analysis(object):
@@ -31,6 +23,7 @@ class Sentiment_Analysis(object):
      def polarity_2(self):
         return TextBlob(self.dataset["processed_reviews"]).sentiment.polarity
 
+     @staticmethod
      def sent_Analysis_2(score):
          if score <0:
              return "Negative"
@@ -63,8 +56,18 @@ class Sentiment_Analysis(object):
         self.dataset['Subjectivity'] = self.dataset['processed_reviews'].apply(subjectivity)
         self.dataset['Polarity'] = self.dataset['processed_reviews'].apply(polarity)
         self.dataset['Analysis'] = self.dataset['Polarity'].apply(sent_Analysis)
-        self.dataset.to_csv(r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\csv\sentiment.csv")
         print(self.dataset.head(10))
+
+
+def make_sentiment_csv(written_csv_dir, outfile):
+    """
+    applies sentiment algo to data,
+    :param written_csv_dir: location of written_reviews.csv file
+    :param outfile: location to output resultant csv file
+    :return: None
+    """
+    sentiment = Sentiment_Analysis(written_csv_dir)
+    sentiment.dataset.to_csv(outfile)
 #################################################################################
 
 
@@ -96,20 +99,8 @@ class Sentiment_Analysis(object):
 
 
 if __name__ == "__main__":
-    data = Sentiment_Analysis(r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\csv\written_reviews.csv")
-    print(data)
-    """
-    # plot the polarity and subjectivity
-        fig = px.scatter(self.dataset[2:10],
-                 x='Polarity',
-                 y='Subjectivity',
-                 color = 'Analysis',
-                 size='Subjectivity')
+    make_sentiment_csv("data/csv/written_reviews.csv",
+                     "data/csv/sentiment.csv")
 
-#add a vertical line at x=0 for Netural Reviews
-        fig.update_layout(title='Sentiment Analysis',
-                  shapes=[dict(type= 'line',
-                               yref= 'paper', y0= 0, y1= 1,
-                               xref= 'x', x0= 0, x1= 0)])
-        fig.show()"""
+
 

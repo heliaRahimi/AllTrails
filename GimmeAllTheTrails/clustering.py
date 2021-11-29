@@ -73,14 +73,18 @@ def plot_dendrogram(model, **kwargs):
     # Plot the corresponding dendrogram
     dendrogram(linkage_matrix, **kwargs)
 
-
-
-if __name__ == "__main__":
-
-    trail_dataset = create_df(csv_f=r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\csv\meta_reviews.csv")
+def make_cluster_csv(reviews_csv_dir, outfile):
+    """
+    applies clustering algo to data,
+    :param reviews_csv_dir: location of meta_reviews.csv file
+    :param outfile: location to output resultant csv file
+    :return: None
+    """
+    trail_dataset = create_df(
+        csv_f=reviews_csv_dir)
     # generating one hot encoder for type column
     ohe = OneHotEncoder(handle_unknown='ignore')
-    encoded_columns = ohe.fit_transform(trail_dataset['type'].values.reshape(-1,1)).toarray()
+    encoded_columns = ohe.fit_transform(trail_dataset['type'].values.reshape(-1, 1)).toarray()
     df = trail_dataset.copy()
     ohe_column_names = ['Out & back', 'Loop', 'Point to point']
     df[ohe_column_names] = pd.DataFrame(encoded_columns)
@@ -93,7 +97,7 @@ if __name__ == "__main__":
     # the frequency of all tags
     frequency = trail_data_expo.value_counts()
     # dataframe of all tags and their frequencies
-    df_frequent_tags = pd.DataFrame({'tag': frequency.index, 'frequency': frequency.values})
+    df_frequent_tags = pd.DataFrame({ 'tag': frequency.index, 'frequency': frequency.values })
 
     """
     -----------------------------------Plot the frequency of all tags------------------------------------------- 
@@ -112,40 +116,22 @@ if __name__ == "__main__":
     most_freq_tag = df_most_freq['tag']
 
     # add new columns representing the tags
-    for i in range(0,len(df_most_freq)):
+    for i in range(0, len(df_most_freq)):
         index_list = trail_data_expo.index[trail_data_expo == most_freq_tag[0]].tolist()
-        for c in range(0,len(df)):
+        for c in range(0, len(df)):
             if c in index_list:
                 df.loc[c, most_freq_tag[i]] = 1
             else:
                 df.loc[c, most_freq_tag[i]] = 0
 
-
     # normalize length and elevation columns
     processed_data = df.drop(columns=['trail_id', 'tags'])
-    processed_data['length']= normalize_column(df['length'])
+    processed_data['length'] = normalize_column(df['length'])
     processed_data['elevation'] = normalize_column(df['elevation'])
 
     """
     ------------------------------------------------Clustering---------------------------------------------------------
     """
-
-    # clustering using KMeans for different number of clusters and plotting them
-    # num_cluster = range(3,10,1)
-    # cluster_scores = []
-    # for i in num_cluster:
-    #     model= KMeans(n_clusters=i, init='k-means++')
-    #     model.fit(processed_data)
-    #     labels = model.predict(processed_data)
-    #     score = metrics.silhouette_score(processed_data, labels, metric='euclidean')
-    #     cluster_scores.append(score)
-    #
-    # fig, ax = plt.subplots()
-    # ax.plot(num_cluster, cluster_scores)
-    # plt.xlabel("Number of clusters")
-    # plt.ylabel("Silhouette Score")
-    # plt.title("KMeans clustering using No Tags")
-    # plt.show()
 
     # KMeans clustering
     model = KMeans(n_clusters=4, init='k-means++')
@@ -153,15 +139,13 @@ if __name__ == "__main__":
     labels = model.predict(processed_data)
     score = metrics.silhouette_score(processed_data, labels, metric='euclidean')
 
-    #clustering using KMedoids
+    # clustering using KMedoids
     # model = KMedoids(n_clusters=6,  init='k-medoids++').fit(processed_data)
     # labels = model.predict(processed_data)
 
-
-    #clustering using Agglomerative clustering
+    # clustering using Agglomerative clustering
     # model = AgglomerativeClustering(n_clusters=7, affinity='euclidean', linkage='ward')
     # labels = model.fit_predict(processed_data)
-
 
     """
     ---------------------------------------------Plot dendrogram of hierarchical clustering-----------------------------
@@ -200,34 +184,26 @@ if __name__ == "__main__":
     """
     #
     # to better plot the data I have transformed the one hot encoder of column = type to the original column
-    data_copy = processed_data.copy(deep= True)
+    data_copy = processed_data.copy(deep=True)
     decoded_column = ohe.inverse_transform(data_copy[ohe_column_names].values).squeeze()
     join_data = pd.DataFrame(decoded_column,
                              columns=['type'])  # Creating a data frame of the decoded column
     data_copy = data_copy.drop(ohe_column_names, axis=1)  # Dropping the original encoded columns
     data_copy = pd.concat([data_copy, join_data], axis=1)  # Concatinating the original column
 
-    data_copy['clusters']= labels
+    data_copy['clusters'] = labels
 
-    """
-    -----------------------------------Plotting data using clusters------------------------------------------
-    """
-    # scatter plot on type and elevation
-    # fig = px.scatter(data_copy, x='length', y='elevation',
-    #                  color="clusters", title='Clusting using KMeans with random initial centroids')
-
-    #scatter plot on all columns as values on x axis and type
-    # fig = px.scatter(data_copy, x='type', y=data_copy.columns,
-    #                  color="clusters", title='Clusting using KMeans with random initial centroids')
-
-    # bar chart on type and length and elevation values
-    # fig = px.bar(data_copy, x="type", y=['elevation', 'length'], color= "clusters", title="Wide-Form Input")
-    #
-    # fig.show()
 
     """
     ------------------------------------------------------Final dataframe----------------------------------------------
     """
     final_dataframe = data_copy.copy()
-    final_dataframe['trail_id']= trail_dataset['trail_id']
-    final_dataframe.to_csv(r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\csv\clusters.csv")
+    final_dataframe['trail_id'] = trail_dataset['trail_id']
+    final_dataframe.to_csv(
+        outfile)
+
+
+
+if __name__ == "__main__":
+    make_cluster_csv("data/csv/meta_reviews.csv",
+                     "data/csv/clusters.csv")
