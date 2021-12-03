@@ -18,38 +18,55 @@ def normalize_column(df_column: pd.Series) -> pd.Series:
     min = df_column.min()
     df_column = df_column.apply(lambda x: x + abs(min))
     max_val = df_column.max()
-    df_column = df_column.apply(lambda x: x/max_val)
+    df_column = df_column.apply(lambda x: x / max_val)
     return df_column
 
 
 def create_df(csv_f):
     # data cleaning
     dataset = pd.read_csv(csv_f)
-    len_elev_type = dataset['length_elev_type']
-    new_params = [''] * len(len_elev_type)
-    t_length = [''] * len(len_elev_type)
-    t_elevation = [''] * len(len_elev_type)
-    t_type = [''] * len(len_elev_type)
+    len_elev_type = dataset["length_elev_type"]
+    new_params = [""] * len(len_elev_type)
+    t_length = [""] * len(len_elev_type)
+    t_elevation = [""] * len(len_elev_type)
+    t_type = [""] * len(len_elev_type)
 
     for i in range(0, len(len_elev_type)):
-        new_params[i] = len_elev_type[i].replace("'", '').replace("[", "").replace("]", "")
+        new_params[i] = (
+            len_elev_type[i].replace("'", "").replace("[", "").replace("]", "")
+        )
         t_length[i], t_elevation[i], t_type[i] = new_params[i].split(", ")
-        t_length[i] = t_length[i].replace(' mi', '')
+        t_length[i] = t_length[i].replace(" mi", "")
         t_length[i] = float(t_length[i])
-        t_elevation[i] = t_elevation[i].replace(' ft', '').replace(',', '.')
+        t_elevation[i] = t_elevation[i].replace(" ft", "").replace(",", ".")
         t_elevation[i] = float(t_elevation[i])
 
-    t_tags = dataset['tags']
-    t_tags_list = ['']*len(t_tags)
+    t_tags = dataset["tags"]
+    t_tags_list = [""] * len(t_tags)
     for i in range(0, len(t_tags)):
-        t_tags_list[i] = t_tags[i].replace(" ","").replace("[", "").replace("]", "").replace(",", "").replace("''"," ")\
-            .replace("'","")
+        t_tags_list[i] = (
+            t_tags[i]
+            .replace(" ", "")
+            .replace("[", "")
+            .replace("]", "")
+            .replace(",", "")
+            .replace("''", " ")
+            .replace("'", "")
+        )
         t_tags_list[i] = t_tags_list[i].split()
 
-    trail_id = dataset['trail_id']
-    df = pd.DataFrame({'trail_id': trail_id, 'length': t_length, 'elevation': t_elevation, 'type': t_type,
-                       'tags': t_tags_list})
+    trail_id = dataset["trail_id"]
+    df = pd.DataFrame(
+        {
+            "trail_id": trail_id,
+            "length": t_length,
+            "elevation": t_elevation,
+            "type": t_type,
+            "tags": t_tags_list,
+        }
+    )
     return df
+
 
 def plot_dendrogram(model, **kwargs):
     # Create linkage matrix and then plot the dendrogram
@@ -73,6 +90,7 @@ def plot_dendrogram(model, **kwargs):
     # Plot the corresponding dendrogram
     dendrogram(linkage_matrix, **kwargs)
 
+
 def make_cluster_csv(reviews_csv_dir, outfile):
     """
     applies clustering algo to data,
@@ -80,24 +98,27 @@ def make_cluster_csv(reviews_csv_dir, outfile):
     :param outfile: location to output resultant csv file
     :return: None
     """
-    trail_dataset = create_df(
-        csv_f=reviews_csv_dir)
+    trail_dataset = create_df(csv_f=reviews_csv_dir)
     # generating one hot encoder for type column
-    ohe = OneHotEncoder(handle_unknown='ignore')
-    encoded_columns = ohe.fit_transform(trail_dataset['type'].values.reshape(-1, 1)).toarray()
+    ohe = OneHotEncoder(handle_unknown="ignore")
+    encoded_columns = ohe.fit_transform(
+        trail_dataset["type"].values.reshape(-1, 1)
+    ).toarray()
     df = trail_dataset.copy()
-    ohe_column_names = ['Out & back', 'Loop', 'Point to point']
+    ohe_column_names = ["Out & back", "Loop", "Point to point"]
     df[ohe_column_names] = pd.DataFrame(encoded_columns)
-    df = df.drop(columns=['type'])
+    df = df.drop(columns=["type"])
 
     # explode the tags column so that we have different rows with same index for each tag
-    trail_data_expo = trail_dataset['tags'].explode()
+    trail_data_expo = trail_dataset["tags"].explode()
     # all unique tags
     unique_tags = trail_data_expo.unique()
     # the frequency of all tags
     frequency = trail_data_expo.value_counts()
     # dataframe of all tags and their frequencies
-    df_frequent_tags = pd.DataFrame({ 'tag': frequency.index, 'frequency': frequency.values })
+    df_frequent_tags = pd.DataFrame(
+        {"tag": frequency.index, "frequency": frequency.values}
+    )
 
     """
     -----------------------------------Plot the frequency of all tags------------------------------------------- 
@@ -112,8 +133,8 @@ def make_cluster_csv(reviews_csv_dir, outfile):
     # the distribution of tags
 
     freq = 0
-    df_most_freq = df_frequent_tags[~(df_frequent_tags['frequency'] <= freq)]
-    most_freq_tag = df_most_freq['tag']
+    df_most_freq = df_frequent_tags[~(df_frequent_tags["frequency"] <= freq)]
+    most_freq_tag = df_most_freq["tag"]
 
     # add new columns representing the tags
     for i in range(0, len(df_most_freq)):
@@ -125,19 +146,19 @@ def make_cluster_csv(reviews_csv_dir, outfile):
                 df.loc[c, most_freq_tag[i]] = 0
 
     # normalize length and elevation columns
-    processed_data = df.drop(columns=['trail_id', 'tags'])
-    processed_data['length'] = normalize_column(df['length'])
-    processed_data['elevation'] = normalize_column(df['elevation'])
+    processed_data = df.drop(columns=["trail_id", "tags"])
+    processed_data["length"] = normalize_column(df["length"])
+    processed_data["elevation"] = normalize_column(df["elevation"])
 
     """
     ------------------------------------------------Clustering---------------------------------------------------------
     """
 
     # KMeans clustering
-    model = KMeans(n_clusters=4, init='k-means++')
+    model = KMeans(n_clusters=4, init="k-means++")
     model.fit(processed_data)
     labels = model.predict(processed_data)
-    score = metrics.silhouette_score(processed_data, labels, metric='euclidean')
+    score = metrics.silhouette_score(processed_data, labels, metric="euclidean")
 
     # clustering using KMedoids
     # model = KMedoids(n_clusters=6,  init='k-medoids++').fit(processed_data)
@@ -186,24 +207,25 @@ def make_cluster_csv(reviews_csv_dir, outfile):
     # to better plot the data I have transformed the one hot encoder of column = type to the original column
     data_copy = processed_data.copy(deep=True)
     decoded_column = ohe.inverse_transform(data_copy[ohe_column_names].values).squeeze()
-    join_data = pd.DataFrame(decoded_column,
-                             columns=['type'])  # Creating a data frame of the decoded column
-    data_copy = data_copy.drop(ohe_column_names, axis=1)  # Dropping the original encoded columns
-    data_copy = pd.concat([data_copy, join_data], axis=1)  # Concatinating the original column
+    join_data = pd.DataFrame(
+        decoded_column, columns=["type"]
+    )  # Creating a data frame of the decoded column
+    data_copy = data_copy.drop(
+        ohe_column_names, axis=1
+    )  # Dropping the original encoded columns
+    data_copy = pd.concat(
+        [data_copy, join_data], axis=1
+    )  # Concatinating the original column
 
-    data_copy['clusters'] = labels
-
+    data_copy["clusters"] = labels
 
     """
     ------------------------------------------------------Final dataframe----------------------------------------------
     """
     final_dataframe = data_copy.copy()
-    final_dataframe['trail_id'] = trail_dataset['trail_id']
-    final_dataframe.to_csv(
-        outfile)
-
+    final_dataframe["trail_id"] = trail_dataset["trail_id"]
+    final_dataframe.to_csv(outfile)
 
 
 if __name__ == "__main__":
-    make_cluster_csv("data/csv/meta_reviews.csv",
-                     "data/csv/clusters.csv")
+    make_cluster_csv("data/csv/meta_reviews.csv", "data/csv/clusters.csv")
