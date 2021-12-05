@@ -285,7 +285,7 @@ def get_main_mini_map(data, selected_trails, main_mini_map_style):
 
 # APP #
 @click.command()
-@click.option("--csv_dir", type=str, default=None, help="directory of csv files")
+@click.option("--csv_dir", type=str, default="./data/csv", help="directory of csv files")
 def run(csv_dir):
     # init app #
     app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
