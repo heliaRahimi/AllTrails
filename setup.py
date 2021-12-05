@@ -25,8 +25,8 @@ setup(
         "pyLDAvis",
         "textblob",
         "wordcloud",
-        'dash_bootstrap_components',
-        'dash_bootstrap_templates'
+        "dash_bootstrap_components",
+        "dash_bootstrap_templates"
     ],
     entry_points={
         "console_scripts": ["GimmeAllTheTrails = GimmeAllTheTrails.main:run"]
