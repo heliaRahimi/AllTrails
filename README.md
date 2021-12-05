@@ -17,7 +17,10 @@ View of single trail
 The project can be installed as a python package
 
 ```
+git clone https://github.com/NoahBarrett98/GimmeAllTheTrails
+cd ./GimmeAllTheTrails
 conda create --name GimmeAllTheTrails python=3.9
+conda activate GimmeAllTheTrails
 cd /path/to/GimmeAllTheTrails
 pip install -e .
 ```
