@@ -91,7 +91,12 @@ def sentiment_mapbox(map_data):
             lat=map_data.latitude.tolist(),
             lon=map_data.longitude.tolist(),
             mode="markers",
-            marker=go.scattermapbox.Marker(size=9, color=map_data.Polarity.tolist()),
+            marker=go.scattermapbox.Marker(
+                size=9,
+                color=map_data.Polarity.tolist(),
+                colorscale="RdBu_r",
+                showscale=True,
+            ),
             text=map_data.trail_id.tolist(),
         )
     )
@@ -248,7 +253,7 @@ def get_filtered_map_data(
     to_filter = to_filter[to_filter["normalized_elevation"] >= filter_elev[0]]
     to_filter = to_filter[to_filter["normalized_elevation"] < filter_elev[1]]
     # # rating
-    to_filter = to_filter[to_filter["avg_rating"] >= filter_rating]
+    to_filter = to_filter[to_filter["avg_rating"] <= filter_rating]
     to_filter.index = to_filter["trail_id"]
     selected_trails.index = selected_trails["trail_id"]
     filtered_data = pd.concat([to_filter, selected_trails], axis=0)
@@ -347,7 +352,7 @@ def run(csv_dir):
     filter_rating = html.Div(
         [
             dbc.Label("Star Rating", html_for="slider"),
-            dcc.Slider(id="filter_rating", min=0, max=5, step=1, value=3),
+            dcc.Slider(id="filter_rating", min=0, max=5, step=1, value=5),
         ],
         className="mb-3",
     )
@@ -515,9 +520,7 @@ def run(csv_dir):
                 value="cluster",
             ),
             dcc.Graph(
-                figure=cluster_mapbox(
-                    data.cluster_map_data[data.cluster_map_data["trail_id"].isin([])]
-                ),
+                figure=cluster_mapbox(data.cluster_map_data),
                 id="main-mini-map",
                 config={"displayModeBar": False},
                 clear_on_unhover=True,
@@ -725,10 +728,16 @@ def run(csv_dir):
 
         # MINI-MAP SWITCH VIEWS BETWEEN CLUSTER AND SENTIMENT ANALYSIS #
         elif is_switch_mini_map_style:
+            filter_trails = get_filtered_map_data(
+                data,
+                selected_trails,
+                filter_type,
+                filter_rating,
+                filter_length,
+                filter_elev,
+            )["trail_id"].to_list()
             # we must then create a new map
-            main_mini_map = get_main_mini_map(
-                data, selected_trails, main_mini_map_style
-            )
+            main_mini_map = get_main_mini_map(data, filter_trails, main_mini_map_style)
             prev_main_mini_map_style = main_mini_map_style
             # set current trail id to none, there are no trails selected
             current_trail_id = None
@@ -1137,10 +1146,16 @@ def run(csv_dir):
             or is_select_filter
             or is_unselect_all
         ):
+            filter_trails = get_filtered_map_data(
+                data,
+                selected_trails,
+                filter_type,
+                filter_rating,
+                filter_length,
+                filter_elev,
+            )["trail_id"].to_list()
             # we must then create a new map
-            main_mini_map = get_main_mini_map(
-                data, selected_trails, main_mini_map_style
-            )
+            main_mini_map = get_main_mini_map(data, filter_trails, main_mini_map_style)
             prev_main_mini_map_style = main_mini_map_style
             current_trail_id = None
         # toggle modal
@@ -1168,6 +1183,3 @@ def run(csv_dir):
         )  # not passed as input
 
     app.run_server(debug=False)
-
-
-

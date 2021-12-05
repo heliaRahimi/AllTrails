@@ -239,9 +239,3 @@ class AllTrails(object):
             lambda x: " ".join(x.split("/")[-1].split("-"))
         )
         return tags
-
-
-if __name__ == "__main__":
-    AllTrails(
-        csv_dir=r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6612\group_proj\GimmeAllTheTrails\data\csv"
-    )
