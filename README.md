@@ -1,5 +1,5 @@
 # GimmeAllTheTrails
-### Noah Barrett, Razia Choudhury, Helia Rahimi
+##### Noah Barrett, Razia Choudhury, Helia Rahimi
 
 Visualizing the sentiment of trail reviews of NS on a popularly used hiking trail app.
 
